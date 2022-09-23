@@ -17,11 +17,13 @@ namespace BookStoreApi.Controllers
     {
         private readonly BookStoreDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<AuthorsController> logger;
 
-        public AuthorsController(BookStoreDbContext context, IMapper mapper)
+        public AuthorsController(BookStoreDbContext context, IMapper mapper, ILogger<AuthorsController>logger)
         {
             _context = context;
             _mapper = mapper;
+            this.logger = logger;
         }
 
         // GET: api/Authors
@@ -40,18 +42,28 @@ namespace BookStoreApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<AuthorReadOnlyDto>> GetAuthor(int id)
         {
-            if (_context.Authors == null)
+            try
             {
-                return NotFound();
-            }
-            var author = _mapper.Map<AuthorReadOnlyDto>(await _context.Authors.FindAsync(id));
+                if (_context.Authors == null)
+                {
+                    return NotFound();
+                }
+                var author = _mapper.Map<AuthorReadOnlyDto>(await _context.Authors.FindAsync(id));
 
-            if (author == null)
+                if (author == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(author);
+            }
+            catch (Exception ex)
             {
-                return NotFound();
-            }
 
-            return Ok(author);
+                logger.LogError(ex, $"Error Performing Get in {nameof(GetAuthor)}");
+                return StatusCode(500,"There is a issue performing request. please try again");
+            }
+           
         }
 
         // PUT: api/Authors/5
